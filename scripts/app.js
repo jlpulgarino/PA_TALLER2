@@ -6,6 +6,8 @@
     console.log('This browser doesn\'t support IndexedDB');
     return;
   }
+  var dbPromise = indexedDB.open('taller2-db1', 1);
+  var db;
 
     var app = {
         isLoading: true,
@@ -14,8 +16,7 @@
         spinner: document.querySelector('.loader'),
         cardTemplate: document.querySelector('.cardTemplate'),
         container: document.querySelector('.main'),
-        addDialog: document.querySelector('.dialog-container'),
-		existDB: false
+        addDialog: document.querySelector('.dialog-container')
     };
 
 
@@ -48,6 +49,14 @@
         app.getSchedule(key, label);
         app.selectedTimetables.push({key: key, label: label});
         app.toggleAddDialog(false);
+		
+		console.log('Entro butAddCity');
+		if (db.objectStoreNames.contains('selectedSched')){
+			var tx = db.transaction("selectedSched", "readwrite");
+			var store = tx.objectStore("selectedSched");
+			store.add({key: key, label: label});
+		}
+		
     });
 
     document.getElementById('butAddCancel').addEventListener('click', function () {
@@ -177,12 +186,11 @@
 
 	  // Save list of cities to localStorage.
    app.saveSelectedSchedules = function(isFirst) {
-	var dbPromise = indexedDB.open('taller2-db1', 1);
 	console.log('Entro saveSelectedSchedules');
 	dbPromise.onupgradeneeded = function() {
 	  // The database did not previously exist, so create object stores and indexes.
-	console.log('Entro saveSelectedSchedules.onupgradeneeded');
-	  var db = dbPromise.result;
+	  console.log('Entro saveSelectedSchedules.onupgradeneeded');
+	  db = dbPromise.result;
 	  if(isFirst == true){
 		var store = db.createObjectStore("firstLoad", {keyPath: "key"});
 		  console.log(app.selectedTimetables[0]);
@@ -193,26 +201,30 @@
 	  }else{
 		var store = db.createObjectStore("selectedSched", {keyPath: "key"});
 	  }
-    	app.existDB = true;
+    	localStorage.existDB = 'true';
 	};
 	dbPromise.onsuccess = function() {
-		var db = dbPromise.result;
+		db = dbPromise.result;
 	};
 
 	
 	};
 
 	app.loadSelectedSchedules = function() {
-	console.log('Entro loadSelectedSchedules');
-	if (app.existDB == true ){
-		var dbPromise = indexedDB.open('taller2-db1', 1);
-
+	console.log(localStorage.existDB);
+	if (localStorage.existDB == 'true' ){
+		console.log('Entro loadSelectedSchedules');
+		//var dbPromise = indexedDB.open('taller2-db1', 1);
+		if (db.objectStoreNames.contains('selectedSched')){
+			console.log('Entro loadSelectedSchedules.if');
+		};
 		dbPromise.onsuccess = function() {
-			var db = dbPromise.result;
+			db = dbPromise.result;
+			console.log('Entro loadSelectedSchedules.onsuccess');
 			if (db.objectStoreNames.contains('selectedSched')){
 				var tx = db.transaction("selectedSched", "readonly");
 				var store = tx.objectStore("selectedSched");
-				var index = store.index("key_t");
+				var index = store.index("key");
 
 				var request = index.getAll();
 				request.onsuccess = function() {
@@ -275,7 +287,7 @@
      *   Instead, check out IDB (https://www.npmjs.com/package/idb) or
      *   SimpleDB (https://gist.github.com/inexorabletash/c8069c042b734519680c)
      ************************************************************************/
-	app.loadSelectedSchedules();
+	//app.loadSelectedSchedules();
     app.getSchedule('metros/1/bastille/A', 'Bastille, Direction La Défense');
     app.selectedTimetables = [
         {key: initialStationTimetable.key, label: initialStationTimetable.label}
