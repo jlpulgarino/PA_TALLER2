@@ -293,4 +293,9 @@
         {key: initialStationTimetable.key, label: initialStationTimetable.label}
     ];
 	app.saveSelectedSchedules(true);
+	if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+             .register('./service-worker.js')
+             .then(function() { console.log('Service Worker Registered'); });
+    }
 })();
